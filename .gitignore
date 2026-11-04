@@ -1,0 +1,14 @@
+# Big program file - download it with software/stirling-pdf/download-stirling-pdf.bat
+*.jar
+# Log files and local editor backups
+software/stirling-pdf/logs/
+*.log
+*.log.gz
+editor/backups/
+# Windows shortcuts / system files
+*.lnk
+Thumbs.db
+desktop.ini
+.DS_Store
+node_modules/
+.vercel/

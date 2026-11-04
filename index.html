@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Student Tools</title>
+  <meta name="description" content="Free, safe online tools to help students with homework, projects and documents.">
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="index.html"><span class="brand-mark">🛠</span> Student Tools</a>
+      <nav>
+        <a href="index.html">All tools</a>
+        <a href="#about">About</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="hero">
+      <h1>Tools to help you study</h1>
+      <p>Free, school-approved tools for homework, projects and assignments. Pick a tool to see what it does and a step-by-step guide.</p>
+    </section>
+
+    <div class="controls">
+      <input id="search" class="search" type="search" placeholder="Search tools… e.g. merge, compress, convert" aria-label="Search tools">
+      <div id="chips" class="chips" role="group" aria-label="Filter by category"></div>
+    </div>
+
+    <div id="grid" class="grid" aria-live="polite"></div>
+
+    <section id="about" class="block">
+      <h2>About these tools</h2>
+      <p>Every tool here is open-source and chosen by the school so you can get work done without signing up for random websites. Where possible, tools run on the school's own server, so your files stay private.</p>
+      <p>Need help or want to suggest a tool? Ask your teacher or the IT department.</p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">Student Tools · Part of the school website</div>
+  </footer>
+
+  <script src="assets/tools.js"></script>
+  <script>
+    (function () {
+      var grid = document.getElementById("grid");
+      var search = document.getElementById("search");
+      var chips = document.getElementById("chips");
+      var activeCat = "All";
+
+      var cats = ["All"].concat(
+        TOOLS.map(function (t) { return t.category; })
+             .filter(function (c, i, a) { return a.indexOf(c) === i; })
+      );
+
+      function esc(s) {
+        return String(s).replace(/[&<>"']/g, function (c) {
+          return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+        });
+      }
+
+      function renderChips() {
+        chips.innerHTML = cats.map(function (c) {
+          return '<button class="chip" type="button" aria-pressed="' + (c === activeCat) + '" data-cat="' + esc(c) + '">' + esc(c) + "</button>";
+        }).join("");
+      }
+
+      function renderGrid() {
+        var q = search.value.trim().toLowerCase();
+        var list = TOOLS.filter(function (t) {
+          var inCat = activeCat === "All" || t.category === activeCat;
+          var hay = (t.name + " " + t.summary + " " + t.category + " " + (t.tags || []).join(" ")).toLowerCase();
+          return inCat && (!q || hay.indexOf(q) !== -1);
+        });
+
+        if (!list.length) {
+          grid.innerHTML = '<p class="empty">No tools match your search.</p>';
+          return;
+        }
+
+        grid.innerHTML = list.map(function (t) {
+          return (
+            '<article class="card" data-tool="' + esc(t.id) + '">' +
+              '<div class="card-top">' +
+                '<div class="card-icon" aria-hidden="true">' + esc(t.icon) + "</div>" +
+                '<div><h3 data-field="name">' + esc(t.name) + '</h3><div class="cat" data-field="category">' + esc(t.category) + "</div></div>" +
+              "</div>" +
+              '<p data-field="summary">' + esc(t.summary) + "</p>" +
+              '<div class="card-actions">' +
+                '<a class="btn btn-primary" href="' + esc(t.page) + '">Learn &amp; use</a>' +
+                '<a class="btn btn-ghost" href="' + esc(t.openUrl) + '" target="_blank" rel="noopener">Open tool ↗</a>' +
+              "</div>" +
+            "</article>"
+          );
+        }).join("");
+      }
+
+      chips.addEventListener("click", function (e) {
+        var b = e.target.closest(".chip");
+        if (!b) return;
+        activeCat = b.getAttribute("data-cat");
+        renderChips();
+        renderGrid();
+      });
+      search.addEventListener("input", renderGrid);
+
+      renderChips();
+      renderGrid();
+    })();
+  </script>
+</body>
+</html>
