@@ -16,19 +16,35 @@
  */
 const TOOLS = [
   {
+    id: "pdf-tools",
+    name: "PDF Toolbox",
+    icon: "📄",
+    category: "PDF & Documents",
+    summary:
+      "Merge PDFs, turn photos into a PDF, split, rotate or delete pages, add page numbers and watermarks — right in your browser, nothing uploaded.",
+    page: "tools/pdf-tools.html",
+    openUrl: "tools/pdf-tools.html",
+    source: "https://github.com/Hopding/pdf-lib",
+    tags: ["merge", "split", "rotate", "delete", "images", "photo", "jpg", "page numbers", "watermark", "extract"],
+  },
+
+  // Stirling PDF (full toolbox with OCR + Office conversion) needs its own server.
+  // When it is hosted online, remove the /* */ below and set openUrl to its address,
+  // e.g. "https://pdf.myschool.edu". "localhost" only works on your own computer.
+  /*
+  {
     id: "stirling-pdf",
     name: "Stirling PDF",
-    icon: "📄",
+    icon: "🧰",
     category: "PDF & Documents",
     summary:
       "Merge, split, compress, convert, rotate and OCR PDF files — all in one place, without uploading your work to unknown websites.",
     page: "tools/stirling-pdf.html",
-    // ⚠ Change this to the address where your school hosts Stirling PDF,
-    //   e.g. "https://pdf.myschool.edu" or "http://192.168.1.20:8080".
     openUrl: "http://localhost:8080",
     source: "https://github.com/Stirling-Tools/stirling-pdf",
     tags: ["merge", "split", "compress", "convert", "ocr", "sign", "watermark"],
   },
+  */
 
   // Example of the next tool — remove the // to enable it.
   // {

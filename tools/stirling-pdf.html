@@ -176,6 +176,8 @@
   <script>
     (function () {
       var tool = TOOLS.find(function (t) { return t.id === "stirling-pdf"; });
+      // Stirling PDF is switched off in assets/tools.js until it has a server — send visitors to the PDF Toolbox.
+      if (!tool) { location.replace("pdf-tools.html"); return; }
       var open = document.getElementById("open-tool");
       var embedBtn = document.getElementById("toggle-embed");
       var embedSection = document.getElementById("embed-section");
