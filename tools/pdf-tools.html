@@ -48,6 +48,30 @@
     .status.err { color: #d33a3a; }
     .btn[disabled] { opacity: .5; cursor: not-allowed; }
     .info { margin-top: 12px; color: var(--muted); font-size: 14px; }
+
+    /* Add text */
+    .field textarea {
+      padding: 10px 12px; font: 15px/1.4 system-ui, sans-serif; border: 1px solid var(--border);
+      border-radius: 10px; background: var(--surface); color: var(--text); min-width: 260px; min-height: 44px; resize: vertical;
+    }
+    .field input[type="color"] { min-width: 0; width: 56px; height: 42px; padding: 4px; }
+    .check { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; padding-bottom: 10px; cursor: pointer; }
+    .pager { display: flex; align-items: center; gap: 10px; margin: 16px 0 10px; flex-wrap: wrap; }
+    .pager span { color: var(--muted); font-size: 14px; }
+    .stage-wrap { overflow-x: auto; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 14px; }
+    .stage { position: relative; margin: 0 auto; box-shadow: 0 2px 12px rgba(0,0,0,.18); cursor: crosshair; touch-action: none; }
+    .stage canvas { display: block; }
+    .txt-item {
+      position: absolute; white-space: pre; line-height: 1.2; font-family: Helvetica, Arial, sans-serif;
+      cursor: move; user-select: none; outline: 1px dashed transparent;
+    }
+    .txt-item:hover { outline-color: rgba(47, 91, 234, .6); }
+    .txt-item.sel { outline: 2px solid var(--accent); }
+    .txt-item .x {
+      position: absolute; top: -11px; right: -11px; width: 22px; height: 22px; border-radius: 50%;
+      border: 0; background: #d33a3a; color: #fff; font: 700 12px/22px system-ui; cursor: pointer; padding: 0; display: none;
+    }
+    .txt-item.sel .x, .txt-item:hover .x { display: block; }
   </style>
 </head>
 <body>
@@ -74,6 +98,7 @@
 
     <div class="tabs chips" role="tablist" aria-label="Choose a tool">
       <button class="chip" type="button" data-tab="merge" aria-pressed="true">🔗 Merge PDFs</button>
+      <button class="chip" type="button" data-tab="text" aria-pressed="false">✏️ Add text</button>
       <button class="chip" type="button" data-tab="images" aria-pressed="false">🖼️ Images → PDF</button>
       <button class="chip" type="button" data-tab="pages" aria-pressed="false">✂️ Split, rotate &amp; delete pages</button>
       <button class="chip" type="button" data-tab="numbers" aria-pressed="false">🔢 Page numbers</button>
@@ -89,6 +114,49 @@
       <ul class="files" data-list="merge"></ul>
       <div class="row"><button class="btn btn-primary" type="button" data-run="merge" disabled>Merge &amp; download</button></div>
       <div class="status" data-status="merge"></div>
+    </section>
+
+    <!-- ADD TEXT -->
+    <section class="panel" data-panel="text" hidden>
+      <h2>Add text to a PDF</h2>
+      <p>Fill in a form, add your name, or write a note. Type your text, then click on the page where it should go.</p>
+      <label class="drop"><input type="file" accept="application/pdf,.pdf" data-input="text">
+        <strong>Choose a PDF</strong> or drag it here</label>
+      <ul class="files" data-list="text"></ul>
+
+      <div data-text-editor hidden>
+        <div class="row">
+          <label class="field">Your text
+            <textarea data-opt="txtValue" rows="2" placeholder="e.g. Ali Khan — Class 9B"></textarea>
+          </label>
+          <label class="field">Size
+            <select data-opt="txtSize">
+              <option value="9">Small (9)</option>
+              <option value="12" selected>Normal (12)</option>
+              <option value="16">Large (16)</option>
+              <option value="24">Heading (24)</option>
+              <option value="36">Big (36)</option>
+            </select>
+          </label>
+          <label class="field">Colour
+            <input type="color" value="#111111" data-opt="txtColor">
+          </label>
+          <label class="check"><input type="checkbox" data-opt="txtBg"> White box behind text<br><small style="font-weight:400;color:var(--muted)">(covers old text)</small></label>
+        </div>
+
+        <div class="pager">
+          <button class="btn btn-ghost" type="button" data-page="-1">‹ Previous</button>
+          <span data-page-label>Page 1 of 1</span>
+          <button class="btn btn-ghost" type="button" data-page="1">Next ›</button>
+          <span>· Click the page to place text. Drag text to move it. Click text to change it, ✕ to delete.</span>
+        </div>
+        <div class="stage-wrap"><div class="stage" data-stage><canvas></canvas></div></div>
+      </div>
+
+      <div class="row">
+        <button class="btn btn-primary" type="button" data-run="text" disabled>Save &amp; download</button>
+      </div>
+      <div class="status" data-status="text"></div>
     </section>
 
     <!-- IMAGES -->
@@ -264,10 +332,11 @@
   </footer>
 
   <script src="../assets/vendor/pdf-lib.min.js"></script>
+  <script src="../assets/vendor/pdfjs/pdf.min.js"></script>
   <script>
   (function () {
     var L = window.PDFLib;
-    var files = { merge: [], images: [], pages: [], numbers: [], watermark: [] };
+    var files = { merge: [], images: [], pages: [], numbers: [], watermark: [], text: [] };
     var multi = { merge: true, images: true };
 
     function $(sel) { return document.querySelector(sel); }
@@ -352,6 +421,7 @@
       $('[data-run="' + tool + '"]').disabled = arr.length < need;
       if (tool === "merge" && arr.length === 1) status(tool, "Add at least one more PDF to merge.");
       else if (!arr.length) status(tool, "");
+      if (tool === "text") { textEditor.load(arr[0]); return; }
       if (tool !== "merge" && tool !== "images" && arr.length) showPageCount(tool);
     }
 
@@ -414,6 +484,37 @@
 
     // ---------- actions ----------
     var actions = {
+      text: function () {
+        var f = files.text[0], items = textEditor.items(), doc, font;
+        return loadPdf(f).then(function (d) { doc = d; return doc.embedFont(L.StandardFonts.Helvetica); })
+          .then(function (fnt) {
+            font = fnt;
+            items.forEach(function (it) {
+              var pg = doc.getPage(it.page), box = visibleBox(pg);
+              var lines = it.text.split("\n"), lh = it.size * LINE, w = 0;
+              lines.forEach(function (ln) {
+                try { w = Math.max(w, font.widthOfTextAtSize(ln, it.size)); }
+                catch (e) {
+                  throw new Error("“" + it.text.slice(0, 30) + "” has letters this tool can't write yet. " +
+                                  "Please use English letters, numbers and common symbols.");
+                }
+              });
+              var top = box.h - it.y; // distance from bottom of page to top of the text box
+              if (it.bg) {
+                rectUpright(pg, box, it.x - 1, top - lines.length * lh, w + 2, lines.length * lh, { color: L.rgb(1, 1, 1) });
+              }
+              lines.forEach(function (ln, k) {
+                if (!ln) return;
+                drawUpright(pg, box, ln, it.x, top - k * lh - it.size * BASE, { size: it.size, font: font, color: hexToRgb(it.color) });
+              });
+            });
+            return doc.save();
+          }).then(function (b) {
+            download(b, baseName(f) + "-edited.pdf");
+            return "Done! Saved " + baseName(f) + "-edited.pdf with " + items.length + " text" + (items.length === 1 ? "" : "s") + " added.";
+          });
+      },
+
       merge: function () {
         var out;
         return L.PDFDocument.create().then(function (d) {
@@ -557,21 +658,195 @@
       }
     };
 
-    // Width/height of the page as the reader sees it (after any rotation).
+    // Width/height of the visible page area as the reader sees it (after any rotation).
     function visibleBox(pg) {
-      var s = pg.getSize(), r = ((pg.getRotation().angle % 360) + 360) % 360;
-      return (r === 90 || r === 270) ? { w: s.height, h: s.width, r: r, pw: s.width, ph: s.height }
-                                     : { w: s.width, h: s.height, r: r, pw: s.width, ph: s.height };
+      var c = pg.getCropBox(), r = ((pg.getRotation().angle % 360) + 360) % 360;
+      var b = { r: r, pw: c.width, ph: c.height, ox: c.x, oy: c.y };
+      if (r === 90 || r === 270) { b.w = c.height; b.h = c.width; } else { b.w = c.width; b.h = c.height; }
+      return b;
+    }
+    // Convert an "as seen" point (from bottom-left of the visible page) to PDF coordinates.
+    function toPdf(box, x, y) {
+      var r = box.r, X = x, Y = y;
+      if (r === 90) { X = box.pw - y; Y = x; }
+      else if (r === 180) { X = box.pw - x; Y = box.ph - y; }
+      else if (r === 270) { X = y; Y = box.ph - x; }
+      return { x: X + box.ox, y: Y + box.oy, rotate: r };
     }
     // Draw text at (x, y) in "as seen" coordinates, so it is upright even on rotated pages.
     function drawUpright(pg, box, text, x, y, o) {
-      var r = box.r, X = x, Y = y, extra = 0;
-      if (r === 90) { X = box.pw - y; Y = x; extra = 90; }
-      else if (r === 180) { X = box.pw - x; Y = box.ph - y; extra = 180; }
-      else if (r === 270) { X = y; Y = box.ph - x; extra = 270; }
-      var opts = Object.assign({}, o, { x: X, y: Y, rotate: L.degrees((o.rotate || 0) + extra) });
-      pg.drawText(text, opts);
+      var p = toPdf(box, x, y);
+      pg.drawText(text, Object.assign({}, o, { x: p.x, y: p.y, rotate: L.degrees((o.rotate || 0) + p.rotate) }));
     }
+    function rectUpright(pg, box, x, y, w, h, o) {
+      var p = toPdf(box, x, y);
+      pg.drawRectangle(Object.assign({}, o, { x: p.x, y: p.y, width: w, height: h, rotate: L.degrees(p.rotate) }));
+    }
+    function hexToRgb(hex) {
+      var n = parseInt(String(hex).replace("#", ""), 16) || 0;
+      return L.rgb(((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255);
+    }
+
+    // ---------- Add text: page preview + placing text ----------
+    var LINE = 1.2, BASE = 0.95; // line height and baseline position (× font size), same as the preview
+    var textEditor = (function () {
+      var PJ = window.pdfjsLib;
+      if (PJ) PJ.GlobalWorkerOptions.workerSrc = "../assets/vendor/pdfjs/pdf.worker.min.js";
+      var wrap = $("[data-text-editor]"), stage = $("[data-stage]"), canvas = stage.querySelector("canvas");
+      var label = $("[data-page-label]"), runBtn = $('[data-run="text"]');
+      var inText = $('[data-opt="txtValue"]'), inSize = $('[data-opt="txtSize"]'),
+          inColor = $('[data-opt="txtColor"]'), inBg = $('[data-opt="txtBg"]');
+      var doc = null, pageNo = 0, scale = 1, items = [], sel = -1, token = 0, renderTask = null;
+
+      function sync() { runBtn.disabled = !doc || !items.length; }
+
+      function reset() {
+        if (doc) doc.destroy();
+        doc = null; items = []; sel = -1; wrap.hidden = true; sync();
+      }
+
+      function load(file) {
+        reset();
+        if (!file) return;
+        if (!PJ) { status("text", "The page preview didn't load. Refresh the page and try again.", "err"); return; }
+        var my = ++token;
+        status("text", "Opening…");
+        file.arrayBuffer().then(function (buf) {
+          return PJ.getDocument({ data: new Uint8Array(buf) }).promise;
+        }).then(function (d) {
+          if (my !== token) { d.destroy(); return; }
+          doc = d; pageNo = 0; wrap.hidden = false;
+          status("text", "Type your text, then click on the page where it should go.");
+          return show();
+        }).catch(function (e) {
+          if (my !== token) return;
+          status("text", /password/i.test(e && e.name + e.message)
+            ? "“" + file.name + "” is password-protected. Unlock it first, then try again."
+            : "“" + file.name + "” could not be opened. Is it a real PDF file?", "err");
+        });
+      }
+
+      function show() {
+        if (!doc) return;
+        label.textContent = "Page " + (pageNo + 1) + " of " + doc.numPages;
+        return doc.getPage(pageNo + 1).then(function (page) {
+          var base = page.getViewport({ scale: 1 });
+          var avail = Math.max(260, wrap.querySelector(".stage-wrap").clientWidth - 30);
+          scale = Math.min(1.6, avail / base.width);
+          var vp = page.getViewport({ scale: scale });
+          var dpr = window.devicePixelRatio || 1;
+          canvas.width = Math.floor(vp.width * dpr); canvas.height = Math.floor(vp.height * dpr);
+          canvas.style.width = vp.width + "px"; canvas.style.height = vp.height + "px";
+          stage.style.width = vp.width + "px"; stage.style.height = vp.height + "px";
+          if (renderTask) renderTask.cancel();
+          renderTask = page.render({ canvasContext: canvas.getContext("2d"), viewport: vp,
+                                     transform: dpr !== 1 ? [dpr, 0, 0, dpr, 0, 0] : null });
+          drawItems();
+          return renderTask.promise.catch(function () {});
+        });
+      }
+
+      function drawItems() {
+        stage.querySelectorAll(".txt-item").forEach(function (n) { n.remove(); });
+        items.forEach(function (it, i) {
+          if (it.page !== pageNo) return;
+          var d = document.createElement("div");
+          d.className = "txt-item" + (i === sel ? " sel" : "");
+          d.setAttribute("data-i", i);
+          d.textContent = it.text;
+          d.style.left = it.x * scale + "px";
+          d.style.top = it.y * scale + "px";
+          d.style.fontSize = it.size * scale + "px";
+          d.style.color = it.color;
+          d.style.background = it.bg ? "#fff" : "transparent";
+          var x = document.createElement("button");
+          x.type = "button"; x.className = "x"; x.textContent = "✕"; x.setAttribute("aria-label", "Delete this text");
+          d.appendChild(x);
+          stage.appendChild(d);
+        });
+        sync();
+      }
+
+      function current() {
+        return { text: inText.value.replace(/\s+$/, ""), size: +inSize.value, color: inColor.value, bg: inBg.checked };
+      }
+
+      // Click empty page → add text. Click text → select it. Drag text → move.
+      var drag = null;
+      stage.addEventListener("pointerdown", function (e) {
+        if (!doc) return;
+        var r = stage.getBoundingClientRect();
+        var px = e.clientX - r.left, py = e.clientY - r.top;
+        if (e.target.classList.contains("x")) return;
+        var el = e.target.closest(".txt-item");
+        if (el) {
+          sel = +el.getAttribute("data-i");
+          var it = items[sel];
+          inText.value = it.text; inSize.value = String(it.size); inColor.value = it.color; inBg.checked = it.bg;
+          drag = { id: e.pointerId, dx: px - it.x * scale, dy: py - it.y * scale };
+          stage.setPointerCapture(e.pointerId);
+          drawItems();
+          return;
+        }
+        if (sel >= 0) { // first click on empty space just finishes editing the selected text
+          sel = -1; inText.value = ""; drawItems();
+          status("text", "Type your next text, then click on the page where it should go.");
+          return;
+        }
+        var c = current();
+        if (!c.text) { status("text", "Type your text in the box above first, then click the page.", "err"); inText.focus(); return; }
+        items.push({ page: pageNo, x: px / scale, y: py / scale - (c.size * LINE) / 2,
+                     text: c.text, size: c.size, color: c.color, bg: c.bg });
+        sel = -1;
+        inText.value = "";
+        drawItems();
+        status("text", items.length + " text" + (items.length === 1 ? "" : "s") + " added. Type more text and click again, or click “Save & download”.");
+      });
+      stage.addEventListener("pointermove", function (e) {
+        if (!drag || e.pointerId !== drag.id || sel < 0) return;
+        var r = stage.getBoundingClientRect();
+        items[sel].x = Math.max(0, (e.clientX - r.left - drag.dx) / scale);
+        items[sel].y = Math.max(0, (e.clientY - r.top - drag.dy) / scale);
+        var el = stage.querySelector('.txt-item[data-i="' + sel + '"]');
+        if (el) { el.style.left = items[sel].x * scale + "px"; el.style.top = items[sel].y * scale + "px"; }
+      });
+      ["pointerup", "pointercancel"].forEach(function (ev) {
+        stage.addEventListener(ev, function () { drag = null; });
+      });
+      stage.addEventListener("click", function (e) {
+        var x = e.target.closest(".x");
+        if (!x) return;
+        var i = +x.parentNode.getAttribute("data-i");
+        items.splice(i, 1);
+        sel = -1;
+        drawItems();
+        status("text", items.length ? items.length + " text" + (items.length === 1 ? "" : "s") + " on the PDF." : "Text removed.");
+      });
+
+      // Changing the controls updates the selected text.
+      [inText, inSize, inColor, inBg].forEach(function (inp) {
+        inp.addEventListener(inp === inText ? "input" : "change", function () {
+          if (sel < 0 || !items[sel]) return;
+          var c = current();
+          if (!c.text) return;
+          Object.assign(items[sel], c);
+          drawItems();
+        });
+      });
+
+      document.querySelectorAll("[data-page]").forEach(function (b) {
+        b.addEventListener("click", function () {
+          if (!doc) return;
+          var n = pageNo + +b.getAttribute("data-page");
+          if (n < 0 || n >= doc.numPages) return;
+          pageNo = n; sel = -1; show();
+        });
+      });
+      var rt;
+      window.addEventListener("resize", function () { clearTimeout(rt); rt = setTimeout(show, 200); });
+
+      return { load: load, reset: reset, items: function () { return items; } };
+    })();
 
     function confirmSplit(n) {
       return window.confirm("This will download " + n + " separate files. Continue?");

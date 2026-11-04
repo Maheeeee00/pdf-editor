@@ -7,6 +7,8 @@ index.html              Tools home page (search + category filters)
 tools/stirling-pdf.html Guide + launcher for Stirling PDF
 assets/style.css        Shared styles (light and dark mode)
 assets/tools.js         The list of tools — edit this to add tools
+tools/pdf-tools.html    PDF Toolbox: merge, add text, images → PDF, pages, numbers, watermark (runs in the browser)
+assets/vendor/          pdf-lib + pdf.js libraries used by the PDF Toolbox (MIT / Apache-2.0)
 ```
 
 ## Editing the text (click to edit)
