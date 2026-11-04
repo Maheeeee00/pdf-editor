@@ -21,11 +21,11 @@ const TOOLS = [
     icon: "📄",
     category: "PDF & Documents",
     summary:
-      "Merge PDFs, turn photos into a PDF, split, rotate or delete pages, add page numbers and watermarks — right in your browser, nothing uploaded.",
+      "Add text to a PDF, merge PDFs, turn photos into a PDF, split, rotate or delete pages, add page numbers and watermarks — right in your browser, nothing uploaded.",
     page: "tools/pdf-tools.html",
     openUrl: "tools/pdf-tools.html",
     source: "https://github.com/Hopding/pdf-lib",
-    tags: ["merge", "split", "rotate", "delete", "images", "photo", "jpg", "page numbers", "watermark", "extract"],
+    tags: ["add text", "write", "fill form", "type", "edit", "merge", "split", "rotate", "delete", "images", "photo", "jpg", "page numbers", "watermark", "extract"],
   },
 
   // Stirling PDF (full toolbox with OCR + Office conversion) needs its own server.
