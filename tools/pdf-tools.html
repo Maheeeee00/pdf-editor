@@ -160,7 +160,8 @@
       </div>
 
       <div class="row">
-        <button class="btn btn-primary" type="button" data-run="text" disabled>Save &amp; download</button>
+        <button class="btn btn-primary" type="button" data-run="text" disabled>Download as PDF</button>
+        <span class="info" data-nopdf style="margin:0 0 10px">No PDF? Skip step 2 — your text is saved as a new PDF.</span>
       </div>
       <div class="status" data-status="text"></div>
     </section>
@@ -491,31 +492,35 @@
     // ---------- actions ----------
     var actions = {
       text: function () {
+        if (!files.text.length) return newPdfFromText();
         var f = files.text[0], items = textEditor.items(), doc, font;
         return loadPdf(f).then(function (d) { doc = d; return doc.embedFont(L.StandardFonts.Helvetica); })
           .then(function (fnt) {
             font = fnt;
-            items.forEach(function (it) {
-              var pg = doc.getPage(it.page), box = visibleBox(pg);
-              var lines = it.text.split("\n"), lh = it.size * LINE, w = 0;
-              lines.forEach(function (ln) {
-                try { w = Math.max(w, font.widthOfTextAtSize(ln, it.size)); }
-                catch (e) {
-                  throw new Error("“" + it.text.slice(0, 30) + "” has letters this tool can't write yet. " +
-                                  "Please use English letters, numbers and common symbols.");
+            return items.reduce(function (p, it) {
+              return p.then(function () {
+                var pg = doc.getPage(it.page), box = visibleBox(pg);
+                var lines = it.text.split("\n"), lh = it.size * LINE;
+                var w = lines.reduce(function (m, ln) { return Math.max(m, lineWidth(font, ln, it.size)); }, 0);
+                var top = box.h - it.y; // distance from bottom of page to top of the text box
+                if (it.bg) {
+                  rectUpright(pg, box, it.x - 1, top - lines.length * lh, w + 2, lines.length * lh, { color: L.rgb(1, 1, 1) });
                 }
+                return lines.reduce(function (q, ln, k) {
+                  return q.then(function () {
+                    if (!ln) return;
+                    if (canWrite(font, ln)) {
+                      drawUpright(pg, box, ln, it.x, top - k * lh - it.size * BASE, { size: it.size, font: font, color: hexToRgb(it.color) });
+                      return;
+                    }
+                    return lineImage(doc, ln, it.size, it.color).then(function (im) {
+                      imageUpright(pg, box, im.image, it.x, top - (k + 1) * lh, im.w, im.h);
+                    });
+                  });
+                }, Promise.resolve());
               });
-              var top = box.h - it.y; // distance from bottom of page to top of the text box
-              if (it.bg) {
-                rectUpright(pg, box, it.x - 1, top - lines.length * lh, w + 2, lines.length * lh, { color: L.rgb(1, 1, 1) });
-              }
-              lines.forEach(function (ln, k) {
-                if (!ln) return;
-                drawUpright(pg, box, ln, it.x, top - k * lh - it.size * BASE, { size: it.size, font: font, color: hexToRgb(it.color) });
-              });
-            });
-            return doc.save();
-          }).then(function (b) {
+            }, Promise.resolve());
+          }).then(function () { return doc.save(); }).then(function (b) {
             download(b, baseName(f) + "-edited.pdf");
             return "Done! Saved " + baseName(f) + "-edited.pdf with " + items.length + " text" + (items.length === 1 ? "" : "s") + " added.";
           });
@@ -693,18 +698,109 @@
       return L.rgb(((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255);
     }
 
+
+    // ---------- text helpers ----------
+    // The built-in PDF font only knows English/European letters. Anything else
+    // (Urdu, emoji, ...) is drawn by the browser onto a sharp image instead.
+    function canWrite(font, s) {
+      try { font.widthOfTextAtSize(s, 10); return true; } catch (e) { return false; }
+    }
+    var mctx = document.createElement("canvas").getContext("2d");
+    function cssFont(px) { return px + 'px Helvetica, Arial, "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", "Noto Nastaliq Urdu", sans-serif'; }
+    function lineWidth(font, s, size) {
+      if (canWrite(font, s)) return font.widthOfTextAtSize(s, size);
+      mctx.font = cssFont(size);
+      return mctx.measureText(s).width;
+    }
+    var SHARP = 4; // image resolution: 4 pixels per point
+    function lineImage(doc, s, size, color) {
+      var w = lineWidth(null, s, size) + size * 0.2, h = size * LINE;
+      var c = document.createElement("canvas");
+      c.width = Math.ceil(w * SHARP); c.height = Math.ceil(h * SHARP);
+      var ctx = c.getContext("2d");
+      ctx.scale(SHARP, SHARP);
+      ctx.font = cssFont(size);
+      ctx.fillStyle = color;
+      ctx.textBaseline = "alphabetic";
+      ctx.fillText(s, 0, size * BASE);
+      return new Promise(function (res) { c.toBlob(res, "image/png"); })
+        .then(function (blob) { return blob.arrayBuffer(); })
+        .then(function (buf) { return doc.embedPng(buf); })
+        .then(function (image) { return { image: image, w: c.width / SHARP, h: c.height / SHARP }; });
+    }
+    function imageUpright(pg, box, image, x, y, w, h) {
+      var p = toPdf(box, x, y);
+      pg.drawImage(image, { x: p.x, y: p.y, width: w, height: h, rotate: L.degrees(p.rotate) });
+    }
+    // Break text into lines that fit maxW points.
+    function wrapText(font, text, size, maxW) {
+      var out = [];
+      text.split("\n").forEach(function (para) {
+        if (!para.trim()) { out.push(""); return; }
+        var line = "";
+        para.split(/(\s+)/).forEach(function (word) {
+          var test = line + word;
+          if (!line || lineWidth(font, test.trimEnd(), size) <= maxW) { line = test; return; }
+          out.push(line.trimEnd());
+          line = word.trim() ? word : "";
+          while (line && lineWidth(font, line, size) > maxW) { // very long word: cut it
+            var k = line.length - 1;
+            while (k > 1 && lineWidth(font, line.slice(0, k), size) > maxW) k--;
+            out.push(line.slice(0, k)); line = line.slice(k);
+          }
+        });
+        out.push(line.trimEnd());
+      });
+      return out;
+    }
+    // No PDF chosen: make a new A4 PDF from the typed text.
+    function newPdfFromText() {
+      var text = $('[data-opt="txtValue"]').value.replace(/\s+$/, "");
+      if (!text) return Promise.reject(new Error("Type your text in box 1 first."));
+      var size = +$('[data-opt="txtSize"]').value, color = $('[data-opt="txtColor"]').value;
+      var W = 595.28, H = 841.89, M = 56, lh = size * LINE, doc, font;
+      return L.PDFDocument.create().then(function (d) { doc = d; return doc.embedFont(L.StandardFonts.Helvetica); })
+        .then(function (fnt) {
+          font = fnt;
+          var lines = wrapText(font, text, size, W - 2 * M);
+          var page = null, y = 0;
+          return lines.reduce(function (p, ln) {
+            return p.then(function () {
+              if (!page || y - lh < M) { page = doc.addPage([W, H]); y = H - M; }
+              var top = y; y -= lh;
+              if (!ln) return;
+              if (canWrite(font, ln)) {
+                page.drawText(ln, { x: M, y: top - size * BASE, size: size, font: font, color: hexToRgb(color) });
+                return;
+              }
+              return lineImage(doc, ln, size, color).then(function (im) {
+                page.drawImage(im.image, { x: M, y: top - im.h, width: im.w, height: im.h });
+              });
+            });
+          }, Promise.resolve());
+        }).then(function () { return doc.save(); }).then(function (b) {
+          download(b, "my-text.pdf");
+          var n = doc.getPageCount();
+          return "Done! Saved my-text.pdf (" + n + " page" + (n === 1 ? "" : "s") + ").";
+        });
+    }
+
     // ---------- Add text: page preview + placing text ----------
     var LINE = 1.2, BASE = 0.95; // line height and baseline position (× font size), same as the preview
     var textEditor = (function () {
       var PJ = window.pdfjsLib;
       if (PJ) PJ.GlobalWorkerOptions.workerSrc = "../assets/vendor/pdfjs/pdf.worker.min.js";
       var wrap = $("[data-text-editor]"), stage = $("[data-stage]"), canvas = stage.querySelector("canvas");
-      var label = $("[data-page-label]"), runBtn = $('[data-run="text"]');
+      var label = $("[data-page-label]"), runBtn = $('[data-run="text"]'), noPdfHint = $("[data-nopdf]");
       var inText = $('[data-opt="txtValue"]'), inSize = $('[data-opt="txtSize"]'),
           inColor = $('[data-opt="txtColor"]'), inBg = $('[data-opt="txtBg"]');
       var doc = null, pageNo = 0, scale = 1, items = [], sel = -1, token = 0, renderTask = null;
 
-      function sync() { runBtn.disabled = !doc || !items.length; }
+      function sync() {
+        runBtn.disabled = doc ? !items.length : (files.text.length > 0 || !inText.value.trim());
+        runBtn.textContent = doc || files.text.length ? "Save & download" : "Download as PDF";
+        noPdfHint.hidden = !!(doc || files.text.length);
+      }
 
       function reset() {
         if (doc) doc.destroy();
@@ -830,6 +926,7 @@
       });
 
       // Changing the controls updates the selected text.
+      inText.addEventListener("input", sync);
       [inText, inSize, inColor, inBg].forEach(function (inp) {
         inp.addEventListener(inp === inText ? "input" : "change", function () {
           if (sel < 0 || !items[sel]) return;
@@ -851,7 +948,8 @@
       var rt;
       window.addEventListener("resize", function () { clearTimeout(rt); rt = setTimeout(show, 200); });
 
-      return { load: load, reset: reset, items: function () { return items; } };
+      sync();
+      return { load: load, reset: reset, sync: sync, items: function () { return items; } };
     })();
 
     function confirmSplit(n) {
@@ -894,7 +992,7 @@
         }).catch(function (e) {
           console.error(e);
           status(tool, (e && e.message) || "Something went wrong.", "err");
-        }).then(function () { btn.disabled = false; });
+        }).then(function () { btn.disabled = false; if (tool === "text") textEditor.sync(); });
       });
     });
   })();
