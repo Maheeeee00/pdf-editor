@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Stirling PDF</title>
+  <meta name="description" content="Merge, split, compress, convert and OCR PDF files with Stirling PDF — a guide for students.">
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="../index.html"><span class="brand-mark">🛠</span> Student Tools</a>
+      <nav>
+        <a href="../index.html">All tools</a>
+        <a href="#guides">Guides</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="crumbs"><a href="../index.html">All tools</a> › Stirling PDF</div>
+
+    <div class="tool-hero">
+      <div class="card-icon" aria-hidden="true">📄</div>
+      <div>
+        <h1>Stirling PDF</h1>
+        <p>A free, open-source toolbox for PDF files. Combine your notes, shrink a file so it fits the upload limit, turn photos of your homework into a PDF, and much more.</p>
+        <div class="card-actions">
+          <a id="open-tool" class="btn btn-primary" href="#" target="_blank" rel="noopener">Open Stirling PDF ↗</a>
+          <button id="toggle-embed" class="btn btn-ghost" type="button">Use it on this page</button>
+          <a id="source" class="btn btn-ghost" href="#" target="_blank" rel="noopener">Source code</a>
+        </div>
+      </div>
+    </div>
+
+    <div id="setup-notice" class="notice" hidden>
+      <strong>For the website admin:</strong> the “Open” button still points to <code id="current-url"></code>.
+      Set <code>openUrl</code> in <code>assets/tools.js</code> to the address where the school hosts Stirling PDF. See <code>README.md</code> for setup.
+    </div>
+
+    <section id="embed-section" class="block" hidden>
+      <h2>Stirling PDF</h2>
+      <iframe id="embed" class="embed-frame" title="Stirling PDF" loading="lazy"></iframe>
+      <p class="tip">If the box above stays blank, use the “Open Stirling PDF” button instead.</p>
+    </section>
+
+    <section class="block">
+      <h2>What can it do?</h2>
+      <div class="features">
+        <div class="feature"><strong>🔗 Merge</strong><span>Join several PDFs into one file.</span></div>
+        <div class="feature"><strong>✂️ Split</strong><span>Break a PDF into pages or sections.</span></div>
+        <div class="feature"><strong>🗜️ Compress</strong><span>Make big files smaller for uploading or emailing.</span></div>
+        <div class="feature"><strong>🖼️ Images → PDF</strong><span>Turn photos of handwritten work into one PDF.</span></div>
+        <div class="feature"><strong>📝 Office → PDF</strong><span>Convert Word, PowerPoint and Excel files.</span></div>
+        <div class="feature"><strong>🔄 PDF → Images / Word</strong><span>Get pictures or editable text out of a PDF.</span></div>
+        <div class="feature"><strong>🔍 OCR</strong><span>Make scanned pages searchable and copyable.</span></div>
+        <div class="feature"><strong>↩️ Rotate &amp; reorder</strong><span>Fix sideways pages and put pages in order.</span></div>
+        <div class="feature"><strong>🔢 Page numbers</strong><span>Add page numbers to your assignment.</span></div>
+        <div class="feature"><strong>💧 Watermark</strong><span>Add your name or a “Draft” stamp.</span></div>
+        <div class="feature"><strong>✍️ Sign</strong><span>Draw or type a signature on a form.</span></div>
+        <div class="feature"><strong>🔒 Password</strong><span>Lock a PDF, or unlock one you own.</span></div>
+      </div>
+    </section>
+
+    <section id="guides" class="block">
+      <h2>Step-by-step guides</h2>
+
+      <details class="guide" open>
+        <summary>Turn photos of my homework into one PDF</summary>
+        <div class="body">
+          <ol>
+            <li>Take clear photos of each page in good light, with the page flat.</li>
+            <li>Open Stirling PDF and search for <strong>“Image to PDF”</strong>.</li>
+            <li>Select all your photos. Put them in the correct page order.</li>
+            <li>Choose <strong>“Merge into single PDF”</strong>, then click <strong>Convert</strong>.</li>
+            <li>Download the PDF and check every page before you hand it in.</li>
+          </ol>
+          <p class="tip">Tip: if the file is too big to upload, follow the “Compress” guide next.</p>
+        </div>
+      </details>
+
+      <details class="guide">
+        <summary>My file is too big to upload — compress it</summary>
+        <div class="body">
+          <ol>
+            <li>Search for <strong>“Compress”</strong>.</li>
+            <li>Upload your PDF.</li>
+            <li>Pick a compression level. Start low; go higher only if it is still too big.</li>
+            <li>Click <strong>Compress</strong> and download the new file.</li>
+            <li>Open it and make sure the text and pictures are still easy to read.</li>
+          </ol>
+        </div>
+      </details>
+
+      <details class="guide">
+        <summary>Combine my notes or worksheets into one file</summary>
+        <div class="body">
+          <ol>
+            <li>Search for <strong>“Merge”</strong>.</li>
+            <li>Upload all the PDFs you want to join.</li>
+            <li>Drag them into the order you want (or sort by name).</li>
+            <li>Click <strong>Merge</strong> and download the combined PDF.</li>
+          </ol>
+        </div>
+      </details>
+
+      <details class="guide">
+        <summary>Convert a Word or PowerPoint file to PDF</summary>
+        <div class="body">
+          <ol>
+            <li>Search for <strong>“Convert”</strong> and choose <strong>“File to PDF”</strong> (Office to PDF).</li>
+            <li>Upload your .docx, .pptx or .xlsx file.</li>
+            <li>Click <strong>Convert</strong> and download the PDF.</li>
+          </ol>
+          <p class="tip">Tip: always check the PDF — fonts and layouts can shift slightly.</p>
+        </div>
+      </details>
+
+      <details class="guide">
+        <summary>Fix sideways or upside-down pages</summary>
+        <div class="body">
+          <ol>
+            <li>Search for <strong>“Rotate”</strong> to turn every page, or <strong>“Multi Tool”</strong> to rotate single pages.</li>
+            <li>Upload the PDF and click the rotate arrows until each page is upright.</li>
+            <li>Save / download the fixed PDF.</li>
+          </ol>
+        </div>
+      </details>
+
+      <details class="guide">
+        <summary>Copy text from a scanned page (OCR)</summary>
+        <div class="body">
+          <ol>
+            <li>Search for <strong>“OCR”</strong>.</li>
+            <li>Upload the scanned PDF and choose the language of the text.</li>
+            <li>Click <strong>Run OCR</strong>, then download the result.</li>
+            <li>You can now search the PDF and copy its text.</li>
+          </ol>
+          <p class="tip">Tip: OCR works best on clear, printed text. Handwriting may not be recognised well.</p>
+        </div>
+      </details>
+
+      <details class="guide">
+        <summary>Take only the pages I need (split / select pages)</summary>
+        <div class="body">
+          <ol>
+            <li>Search for <strong>“Split”</strong> or <strong>“Select pages”</strong>.</li>
+            <li>Upload the PDF and type the page numbers, e.g. <code>1,3,5-8</code>.</li>
+            <li>Click the button to process, then download.</li>
+          </ol>
+        </div>
+      </details>
+    </section>
+
+    <section class="block">
+      <h2>Stay safe</h2>
+      <ul>
+        <li>Only upload your own school work — never other people's private documents.</li>
+        <li>Always open and check your downloaded file before handing it in.</li>
+        <li>Keep a copy of your original file in case something goes wrong.</li>
+        <li>Using a tool to change a file does not change who did the work — hand in your own work.</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      Stirling PDF is open-source software by Stirling Tools —
+      <a href="https://github.com/Stirling-Tools/stirling-pdf" target="_blank" rel="noopener">github.com/Stirling-Tools/stirling-pdf</a>.
+      This guide is part of the school's Student Tools section.
+    </div>
+  </footer>
+
+  <script src="../assets/tools.js"></script>
+  <script>
+    (function () {
+      var tool = TOOLS.find(function (t) { return t.id === "stirling-pdf"; });
+      var open = document.getElementById("open-tool");
+      var embedBtn = document.getElementById("toggle-embed");
+      var embedSection = document.getElementById("embed-section");
+      var frame = document.getElementById("embed");
+
+      open.href = tool.openUrl;
+      document.getElementById("source").href = tool.source;
+
+      // Remind the admin if the default local address is still configured.
+      if (/localhost|127\.0\.0\.1/.test(tool.openUrl)) {
+        document.getElementById("current-url").textContent = tool.openUrl;
+        document.getElementById("setup-notice").hidden = false;
+      }
+
+      embedBtn.addEventListener("click", function () {
+        var show = embedSection.hidden;
+        embedSection.hidden = !show;
+        if (show && !frame.src) frame.src = tool.openUrl;
+        embedBtn.textContent = show ? "Hide tool" : "Use it on this page";
+        if (show) embedSection.scrollIntoView({ behavior: "smooth" });
+      });
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+services:
+  stirling-pdf:
+    image: stirlingtools/stirling-pdf:latest
+    container_name: stirling-pdf
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data/configs:/configs
+      - ./data/tessdata:/usr/share/tessdata   # extra OCR languages
+      - ./data/logs:/logs
+    environment:
+      - SECURITY_ENABLELOGIN=false   # set to true to require student logins
+      - LANGS=en_GB
+    restart: unless-stopped
