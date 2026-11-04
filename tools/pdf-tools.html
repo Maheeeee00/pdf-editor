@@ -50,6 +50,8 @@
     .info { margin-top: 12px; color: var(--muted); font-size: 14px; }
 
     /* Add text */
+    .step { font-size: 16px; margin: 20px 0 10px; }
+    .step:first-of-type { margin-top: 6px; }
     .field textarea {
       padding: 10px 12px; font: 15px/1.4 system-ui, sans-serif; border: 1px solid var(--border);
       border-radius: 10px; background: var(--surface); color: var(--text); min-width: 260px; min-height: 44px; resize: vertical;
@@ -119,36 +121,40 @@
     <!-- ADD TEXT -->
     <section class="panel" data-panel="text" hidden>
       <h2>Add text to a PDF</h2>
-      <p>Fill in a form, add your name, or write a note. Type your text, then click on the page where it should go.</p>
+      <p>Fill in a form, add your name, or write a note.</p>
+
+      <h3 class="step">1. Type your text</h3>
+      <div class="row" style="margin-top:0">
+        <label class="field">Your text
+          <textarea data-opt="txtValue" rows="2" placeholder="e.g. Ali Khan — Class 9B"></textarea>
+        </label>
+        <label class="field">Size
+          <select data-opt="txtSize">
+            <option value="9">Small (9)</option>
+            <option value="12" selected>Normal (12)</option>
+            <option value="16">Large (16)</option>
+            <option value="24">Heading (24)</option>
+            <option value="36">Big (36)</option>
+          </select>
+        </label>
+        <label class="field">Colour
+          <input type="color" value="#111111" data-opt="txtColor">
+        </label>
+        <label class="check"><input type="checkbox" data-opt="txtBg"> White box behind text<br><small style="font-weight:400;color:var(--muted)">(covers old text)</small></label>
+      </div>
+
+      <h3 class="step">2. Choose your PDF</h3>
       <label class="drop"><input type="file" accept="application/pdf,.pdf" data-input="text">
         <strong>Choose a PDF</strong> or drag it here</label>
       <ul class="files" data-list="text"></ul>
 
       <div data-text-editor hidden>
-        <div class="row">
-          <label class="field">Your text
-            <textarea data-opt="txtValue" rows="2" placeholder="e.g. Ali Khan — Class 9B"></textarea>
-          </label>
-          <label class="field">Size
-            <select data-opt="txtSize">
-              <option value="9">Small (9)</option>
-              <option value="12" selected>Normal (12)</option>
-              <option value="16">Large (16)</option>
-              <option value="24">Heading (24)</option>
-              <option value="36">Big (36)</option>
-            </select>
-          </label>
-          <label class="field">Colour
-            <input type="color" value="#111111" data-opt="txtColor">
-          </label>
-          <label class="check"><input type="checkbox" data-opt="txtBg"> White box behind text<br><small style="font-weight:400;color:var(--muted)">(covers old text)</small></label>
-        </div>
-
+        <h3 class="step">3. Click on the page where the text should go</h3>
         <div class="pager">
           <button class="btn btn-ghost" type="button" data-page="-1">‹ Previous</button>
           <span data-page-label>Page 1 of 1</span>
           <button class="btn btn-ghost" type="button" data-page="1">Next ›</button>
-          <span>· Click the page to place text. Drag text to move it. Click text to change it, ✕ to delete.</span>
+          <span>· Drag text to move it. Click text to change it, ✕ to delete.</span>
         </div>
         <div class="stage-wrap"><div class="stage" data-stage><canvas></canvas></div></div>
       </div>
@@ -716,7 +722,7 @@
         }).then(function (d) {
           if (my !== token) { d.destroy(); return; }
           doc = d; pageNo = 0; wrap.hidden = false;
-          status("text", "Type your text, then click on the page where it should go.");
+          status("text", inText.value.trim() ? "Now click on the page where your text should go." : "Type your text in box 1, then click on the page where it should go.");
           return show();
         }).catch(function (e) {
           if (my !== token) return;
